@@ -131,7 +131,7 @@ class DecodeSpec extends FreeSpec with ChiselScalatestTester with Matchers{
 class ExecuteSpec extends FreeSpec with ChiselScalatestTester with Matchers{
     
     "Execute should be OK " in {//scala.util.Random.nextInt(32)
-        test(new ExecuteDataPath).withAval debug_addr = Input(UInt(5.W))
+        test(new ExecuteDataPath).withAnnotations(Seq(WriteVcdAnnotation))  { c =>
         // val debug_rdata = Output(UInt(64.W))
         // val debug_wdata =Input(UInt(64.W))
         // val debug_en =Input(Bool())nnotations(Seq(WriteVcdAnnotation))  { c =>
@@ -210,8 +210,19 @@ class TopSpec extends FreeSpec with ChiselScalatestTester with Matchers{
                 val rs2_addr = Random.nextInt(32)
                 val rd_addr = Random.nextInt(32)
 
+                if(x > 1)
+                {
+                    c.io.wb_rd_en.poke(true.B)
+                }
+
                 c.io.dec_inst.poke(instruction_synthetic(rs1_addr,rs2_addr,rd_addr).U)
 
+                c.clock.step()
+
+            }
+            for (x <- 0 to 32)
+            {
+                c.io.debug_addr.poke(x.U)
                 c.clock.step()
             }
             
