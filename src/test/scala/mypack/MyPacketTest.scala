@@ -30,7 +30,7 @@ class ANDSpec extends FreeSpec with ChiselScalatestTester with Matchers{
 
 class RegfileSpec extends FreeSpec with ChiselScalatestTester with Matchers{
     "RegFile should be OK " in {
-        test(new RegisterFile) { c =>
+        test(new RegisterFile).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
             c.io.wen.poke(true.B)
             var x=0;
             for ( x <- 0 to 31){
@@ -88,30 +88,30 @@ class DecodeSpec extends FreeSpec with ChiselScalatestTester with Matchers{
     "Decode should be OK " in {//scala.util.Random.nextInt(32)
         test(new DecodeDataPath).withAnnotations(Seq(WriteVcdAnnotation)) { c =>
             //use debug io to write reg
-            c.io.debug_wdata.poke(1.U)
-            c.io.debug_addr.poke(1.U)
-            c.io.debug_en.poke(true.B)
+            c.io.debugIO.debug_wdata.poke(1.U)
+            c.io.debugIO.debug_addr.poke(1.U)
+            c.io.debugIO.debug_en.poke(true.B)
             c.clock.step()
-            c.io.debug_wdata.poke(2.U)
-            c.io.debug_addr.poke(2.U)
-            c.io.debug_en.poke(true.B)
+            c.io.debugIO.debug_wdata.poke(2.U)
+            c.io.debugIO.debug_addr.poke(2.U)
+            c.io.debugIO.debug_en.poke(true.B)
             c.clock.step()
             //test read
             c.io.dec_inst.poke(instruction_synthetic(1,2,3).U)
             c.clock.step()
             // c.io.debug_addr.poke(3.U)
             // c.io.debug_rdata.expect(3.U)
-            c.io.exe_op1_data.expect(1.U)
-            c.io.exe_op2_data.expect(2.U)
-            c.io.exe_wbaddr.expect(3.U)
+            c.io.dectoexeIO.exe_op1_data.expect(1.U)
+            c.io.dectoexeIO.exe_op2_data.expect(2.U)
+            c.io.dectoexeIO.exe_wbaddr.expect(3.U)
             c.clock.step()
             //test write
-            c.io.wb_rd_addr.poke(3.U)
-            c.io.wb_rd_en.poke(true.B)
-            c.io.wb_rd_data.poke(3.U)
+            c.io.wbtodecIO.wb_rd_addr.poke(3.U)
+            c.io.wbtodecIO.wb_rd_en.poke(true.B)
+            c.io.wbtodecIO.wb_rd_data.poke(3.U)
             c.clock.step()
-            c.io.debug_addr.poke(3.U)
-            c.io.debug_rdata.expect(3.U)
+            c.io.debugIO.debug_addr.poke(3.U)
+            c.io.debugIO.debug_rdata.expect(3.U)
 
             
         }
@@ -144,18 +144,18 @@ class ExecuteSpec extends FreeSpec with ChiselScalatestTester with Matchers{
 
                 val addr = Random.nextInt(32)
 
-                c.io.exe_wbaddr.poke(addr.U)
+                c.io.dectoexeIO.exe_wbaddr.poke(addr.U)
 
-                c.io.exe_op1_data.poke(op1.U)
-                c.io.exe_op2_data.poke(op2.U)
+                c.io.dectoexeIO.exe_op1_data.poke(op1.U)
+                c.io.dectoexeIO.exe_op2_data.poke(op2.U)
 
                 c.clock.step()
 
-                c.io.mem_alu_out.expect(result.U)
-                c.io.mem_wbaddr.expect(addr.U)
+                c.io.exetomemIO.mem_alu_out.expect(result.U)
+                c.io.exetomemIO.mem_wbaddr.expect(addr.U)
 
                // println(c.io.mem_alu_out.peek())
-                c.io.mem_alu_out.peek()
+                c.io.exetomemIO.mem_alu_out.peek()
             }
         }
     }
@@ -174,13 +174,13 @@ class MemorySpec extends FreeSpec with ChiselScalatestTester with Matchers{
                 
                 
 
-                c.io.mem_alu_out.poke(alu_out.U)
-                c.io.mem_wbaddr.poke(addr.U)
+                c.io.exetomemIO.mem_alu_out.poke(alu_out.U)
+                c.io.exetomemIO.mem_wbaddr.poke(addr.U)
                 //c.io.mem_alu_out.peek()
                 c.clock.step()
 
-                c.io.wb_rd_data.expect(alu_out.U)
-                c.io.wb_rd_addr.expect(addr.U)
+                c.io.wbtodecIO.wb_rd_data.expect(alu_out.U)
+                c.io.wbtodecIO.wb_rd_addr.expect(addr.U)
             }
         }
     }
@@ -199,9 +199,9 @@ class TopSpec extends FreeSpec with ChiselScalatestTester with Matchers{
 
             for (x <- 0 to 32 )
             {
-                c.io.debug_wdata.poke(x.U)
-                c.io.debug_addr.poke(x.U)
-                c.io.debug_en.poke(true.B)
+                c.io.debugIO.debug_wdata.poke(x.U)
+                c.io.debugIO.debug_addr.poke(x.U)
+                c.io.debugIO.debug_en.poke(true.B)
                 c.clock.step()
             }
             for (x <- 0 to 100)
@@ -210,11 +210,6 @@ class TopSpec extends FreeSpec with ChiselScalatestTester with Matchers{
                 val rs2_addr = Random.nextInt(32)
                 val rd_addr = Random.nextInt(32)
 
-                if(x > 1)
-                {
-                    c.io.wb_rd_en.poke(true.B)
-                }
-
                 c.io.dec_inst.poke(instruction_synthetic(rs1_addr,rs2_addr,rd_addr).U)
 
                 c.clock.step()
@@ -222,13 +217,15 @@ class TopSpec extends FreeSpec with ChiselScalatestTester with Matchers{
             }
             for (x <- 0 to 32)
             {
-                c.io.debug_addr.poke(x.U)
+                c.io.debugIO.debug_addr.poke(x.U)
                 c.clock.step()
             }
             
         }
     }
 }
+
+
 
 
 
