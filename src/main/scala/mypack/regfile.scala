@@ -23,7 +23,7 @@ class RegisterFile(implicit val conf: Int = 64) extends Module
 {
    val io = IO(new RFileIo())
 
-   val regfile = Mem(32, UInt(conf.W))
+   val regfile = RegInit(VecInit(Seq.fill(32)(0.U(conf.W))))
 
    when (io.wen && (io.waddr =/= 0.U))
    {
@@ -38,5 +38,11 @@ class RegisterFile(implicit val conf: Int = 64) extends Module
    io.rs1_data := Mux((io.rs1_addr =/= 0.U), regfile(io.rs1_addr), 0.U)
    io.rs2_data := Mux((io.rs2_addr =/= 0.U), regfile(io.rs2_addr), 0.U)
    io.dm_rdata := Mux((io.dm_addr =/= 0.U), regfile(io.dm_addr), 0.U)
+
+    //difftest
+    val mod = Module(new difftest.DifftestArchIntRegState)
+    mod.io.clock := clock
+    mod.io.coreid := 0.U
+    mod.io.gpr := regfile
 
 }

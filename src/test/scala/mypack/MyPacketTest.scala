@@ -193,7 +193,7 @@ class TopSpec extends FreeSpec with ChiselScalatestTester with Matchers{
             def instruction_synthetic (rs1:Int ,rs2:Int ,rd:Int) = (0|51|(rd<<7)|(0<<12)|(rs1<<15)|(rs2<<20))
             
             var x = 0
-            c.io.dec_wen.poke(true.B)
+            //c.io.dec_wen.poke(true.B)
 
             c.clock.step()
 
@@ -210,7 +210,7 @@ class TopSpec extends FreeSpec with ChiselScalatestTester with Matchers{
                 val rs2_addr = Random.nextInt(32)
                 val rd_addr = Random.nextInt(32)
 
-                c.io.dec_inst.poke(instruction_synthetic(rs1_addr,rs2_addr,rd_addr).U)
+                //c.io.dec_inst.poke(instruction_synthetic(rs1_addr,rs2_addr,rd_addr).U)
 
                 c.clock.step()
 
@@ -224,6 +224,52 @@ class TopSpec extends FreeSpec with ChiselScalatestTester with Matchers{
         }
     }
 }
+
+
+
+class Top2Spec extends FreeSpec with ChiselScalatestTester with Matchers{
+    
+    "Top should be OK " in {//scala.util.Random.nextInt(32)
+        test(new Top2DataPath).withAnnotations(Seq(WriteVcdAnnotation))  { c =>
+            def instruction_synthetic (rs1:Int ,imm:Int ,rd:Int) = (0|19|(rd<<7)|(0<<12)|(rs1<<15)|(imm<<20))
+            
+            var x = 0
+            //c.io.dec_wen.poke(true.B)
+
+            c.clock.step()
+
+            for (x <- 0 to 32 )
+            {
+                c.io.debugIO.debug_wdata.poke(x.U)
+                c.io.debugIO.debug_addr.poke(x.U)
+                c.io.debugIO.debug_en.poke(true.B)
+                c.clock.step()
+            }
+            for (x <- 0 to 100)
+            {
+                val rs1_addr = Random.nextInt(32)
+                val imm = Random.nextInt(10)
+                val rd_addr = Random.nextInt(32)
+
+                c.io.dec_inst.poke((BigInt("00100093",16)).U)
+
+                c.clock.step()
+
+            }
+            for (x <- 0 to 32)
+            {
+                c.io.debugIO.debug_addr.poke(x.U)
+                c.clock.step()
+            }
+            
+        }
+    }
+}
+
+
+
+
+
 
 
 
